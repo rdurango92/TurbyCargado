@@ -9,7 +9,9 @@
 
 ## ---------------------------------
 
+import streamlit as st
 
+@st.cache_data
 def calcular_tiempo_carga(carga_inicial, carga_final, pendiente):
     """
     Calcula el tiempo en minutos necesario para cargar la batería desde una carga inicial hasta una carga final.
