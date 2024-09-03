@@ -10,8 +10,10 @@
 
 # Importar librerías
 import streamlit as st
+import numpy as np
 from PIL import Image
 from datetime import datetime, timedelta
+import plotly.graph_objects as go
 
 from utilidades import calcular_tiempo_carga
 
@@ -108,6 +110,36 @@ with col1:
                 """, unsafe_allow_html=True)
 
 # Columna 2 ----------------------------------------
+
+with col2:
+    with st.container(border=True):
+        
+        # Generar puntos intermedios para el gráfico
+        tiempos = np.linspace(0, st.session_state.tiempo_minutos, num=50)  # 50 puntos intermedios
+        cargas = np.linspace(st.session_state.carga_inicial, st.session_state.carga_final, num=50)
+
+        
+        # Gráfico de Proceso de Carga
+        fig1 = go.Figure()
+        fig1.add_trace(go.Scatter(
+            x=tiempos,
+            y=cargas,
+            fill='tozeroy',
+            fillcolor='rgba(0, 206, 209, 0.3)',
+            mode='lines',
+            line=dict(color='#00CED1'),
+            name='Proceso de Carga',
+            hoverinfo='x+y',
+            hovertemplate='<b>Tiempo:</b> %{x} minutos<br><b>Carga:</b> %{y}%',
+        ))
+        fig1.update_layout(
+            xaxis_title='Tiempo (minutos)',
+            yaxis_title='Carga (%)',
+            margin=dict(l=20, r=20, t=30, b=20),
+            height=320,
+            hovermode='closest'
+        )
+        st.plotly_chart(fig1, use_container_width=True)
 
 # Barra lateral ------------------------------------
 
