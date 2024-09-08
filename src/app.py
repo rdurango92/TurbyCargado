@@ -39,7 +39,7 @@ if "carga_final" not in st.session_state:
 if "hora_inicial" not in st.session_state:
     st.session_state.hora_inicial = datetime.now().time()
 if "tiempo_minutos" not in st.session_state:
-    st.session_state.tiempo_minutos = None
+    st.session_state.tiempo_minutos = 0
 if "hora_final" not in st.session_state:
     st.session_state.hora_final = None
 if "boton_pulsado" not in st.session_state:
