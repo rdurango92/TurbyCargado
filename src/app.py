@@ -39,9 +39,10 @@ if "carga_final" not in st.session_state:
 if "hora_inicial" not in st.session_state:
     st.session_state.hora_inicial = datetime.now().time()
 if "tiempo_minutos" not in st.session_state:
-    st.session_state.tiempo_minutos = 0
+    st.session_state.tiempo_minutos = 170
 if "hora_final" not in st.session_state:
-    st.session_state.hora_final = None
+    # Calcular una hora final temporal basada en la hora inicial para evitar None
+    st.session_state.hora_final = (datetime.combine(datetime.today(), st.session_state.hora_inicial) + timedelta(minutes=st.session_state.tiempo_minutos)).time()
 if "boton_pulsado" not in st.session_state:
     st.session_state.boton_pulsado = False
 
@@ -112,6 +113,7 @@ with col1:
 # Columna 2 ----------------------------------------
 
 with col2:
+    # Gráfico de Proceso de Carga
     with st.container(border=True):
         
         # Generar puntos intermedios para el gráfico
@@ -132,6 +134,7 @@ with col2:
             hoverinfo='x+y',
             hovertemplate='<b>Tiempo:</b> %{x} minutos<br><b>Carga:</b> %{y}%',
         ))
+        
         fig1.update_layout(
             xaxis_title='Tiempo (minutos)',
             yaxis_title='Carga (%)',
@@ -140,6 +143,69 @@ with col2:
             hovermode='closest'
         )
         st.plotly_chart(fig1, use_container_width=True)
+    
+    # Linea de tiempo de carga
+    with st.container(border=True):
+        
+        # Definir los eventos clave
+        eventos = ['Inicio', '25% 🪫', '50% 🪫', '75% 🔋', 'Fin']
+        tiempos_eventos = [
+            st.session_state.hora_inicial,  # Inicio
+            (datetime.combine(datetime.today(), st.session_state.hora_inicial) + timedelta(minutes=st.session_state.tiempo_minutos * 0.25)).time(),  # 25% del tiempo
+            (datetime.combine(datetime.today(), st.session_state.hora_inicial) + timedelta(minutes=st.session_state.tiempo_minutos * 0.5)).time(),   # 50% del tiempo
+            (datetime.combine(datetime.today(), st.session_state.hora_inicial) + timedelta(minutes=st.session_state.tiempo_minutos * 0.75)).time(),  # 75% del tiempo
+            st.session_state.hora_final  # Carga completa
+        ]
+
+        # Crear gráfico de línea de tiempo
+        fig2 = go.Figure()
+
+        # Agregar los puntos de eventos en la línea de tiempo
+        for evento, tiempo, carga, minutos in zip(
+                eventos, tiempos_eventos, 
+                [st.session_state.carga_inicial, 25, 50, 75, st.session_state.carga_final],
+                [0, st.session_state.tiempo_minutos * 0.25, st.session_state.tiempo_minutos * 0.5, st.session_state.tiempo_minutos * 0.75, st.session_state.tiempo_minutos]):
+            fig2.add_trace(go.Scatter(
+                x=[tiempo],
+                y=[0],  # Poner todos los eventos en la misma altura (y=0) para simular la línea de tiempo
+                mode='markers+text',
+                marker=dict(size=12, color='#00CED1'),
+                text=[evento],
+                textposition='top center',
+                hoverinfo='text',
+                hovertemplate=f'<b>Hora:</b> {tiempo.strftime("%I:%M %p")}<br><b>Minutos:</b> {int(minutos)} min<br><b>Carga:</b> {carga}%',
+                name=evento
+            ))
+
+        # Agregar una línea horizontal para conectar los puntos
+        fig2.add_trace(go.Scatter(
+            x=tiempos_eventos,
+            y=[0, 0, 0, 0, 0],  # Línea en la posición y=0
+            mode='lines',
+            line=dict(color='#00CED1', width=3),
+            showlegend=False  # No mostrar la leyenda
+        ))
+
+        # Ajustar el diseño del gráfico
+        fig2.update_layout(
+            xaxis_title=None,
+            xaxis=dict(
+                type='category',  # Para que las horas se muestren correctamente
+                tickformat='%I:%M %p',  # Formato de hora AM/PM
+                tickvals=tiempos_eventos,  # Marcar solo los puntos importantes
+                ticktext=[t.strftime("%I:%M %p") for t in tiempos_eventos],  # Mostrar el tiempo en formato AM/PM
+            ),
+            yaxis=dict(showticklabels=False),  # Ocultar etiquetas del eje Y
+            margin=dict(l=10, r=10, t=0, b=0),
+            height=88,
+            hovermode='closest',
+            showlegend=False,  # Ocultar la leyenda
+        )
+        
+        # Mostrar la línea de tiempo
+        st.plotly_chart(fig2, use_container_width=True)
+
+        
 
 # Barra lateral ------------------------------------
 
