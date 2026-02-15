@@ -13,7 +13,9 @@ TurbyCargado es una aplicación web desarrollada en Streamlit que permite calcul
 - 📱 **Interfaz Intuitiva**: Aplicación web fácil de usar construida con Streamlit
 - 📈 **Visualización**: Gráficos interactivos con Plotly para mostrar el progreso de carga
 - ⏰ **Planificación**: Calcula tanto el tiempo de carga como la hora estimada de finalización
-- 🔐 **Seguimiento**: Sistema de notificaciones protegido por contraseña
+- 🕒 **Hora Visual**: Selector de hora con slider y accesos rápidos (ahora, +15, +30, +60)
+- 🗄️ **Persistencia Cloud**: Guardado de ciclos en Turso (SQLite cloud)
+- 📩 **Notificaciones Telegram**: Avisos de inicio y fin con worker programado en GitHub Actions
 - 📊 **Análisis de Datos**: Notebook Jupyter incluido con análisis completo
 
 ## 🚗 ¿Qué es Turby?
@@ -24,7 +26,7 @@ Turby es un **Changan Lumin**, un vehículo eléctrico compacto y eficiente. Est
 
 ### Prerrequisitos
 
-- Python 3.8 o superior
+- Python 3.9 o superior
 - pip (gestor de paquetes de Python)
 
 ### Pasos de Instalación
@@ -40,12 +42,21 @@ Turby es un **Changan Lumin**, un vehículo eléctrico compacto y eficiente. Est
    pip install -r requirements.txt
    ```
 
-3. **Configura los secretos** (opcional para seguimiento):
+3. **Configura los secretos**:
    - Crea un archivo `.streamlit/secrets.toml`
-   - Añade tu contraseña para el sistema de seguimiento:
+   - Configura app, Turso y Telegram:
      ```toml
      [general]
-     password = "tu_contraseña_aquí"
+     password = "tu_contraseña_opcional"
+     timezone = "America/Mexico_City"
+
+     [turso]
+     url = "libsql://<tu-db>.turso.io"
+     auth_token = "<tu_token_turso>"
+
+     [telegram]
+     bot_token = "<tu_bot_token>"
+     chat_id = "<tu_chat_id>"
      ```
 
 4. **Ejecuta la aplicación**:
@@ -62,35 +73,67 @@ Turby es un **Changan Lumin**, un vehículo eléctrico compacto y eficiente. Est
 1. **Configura los parámetros**:
    - **Carga Inicial**: Porcentaje actual de batería (0-100%)
    - **Carga Final**: Porcentaje deseado de batería (0-100%)
-   - **Hora de Inicio**: Momento en que comenzará la carga
+   - **Hora de Inicio**: Usa slider (pasos de 5 min) o accesos rápidos
 
 2. **Haz clic en "Calcular"** para obtener:
    - Tiempo estimado de carga en minutos
    - Hora estimada de finalización
    - Visualización del progreso
+   - Indicador de cruce de medianoche `(+1 dia)` cuando aplique
 
 3. **Interpretación de Resultados**:
    - Los cálculos se basan en una pendiente de regresión de ~0.0024 carga/minuto
    - Los resultados son específicos para las condiciones de Turby
 
-### Sistema de Seguimiento (Opcional)
+### Sistema de Seguimiento (Turso + Telegram)
 
-- Utiliza la contraseña configurada para acceder al seguimiento de carga
-- Recibe notificaciones sobre el progreso de la carga
+- En el panel "Seguimiento de Carga", pulsa `Iniciar seguimiento` despues de calcular.
+- Se guarda el ciclo en la base de datos con estado `scheduled`.
+- Se crea un job de notificacion `start` y otro `end`.
+- El mensaje de inicio se envia al momento.
+- El mensaje de fin lo envia el worker de GitHub Actions cada 5 minutos.
+
+### Historial de Ciclos
+
+- La app muestra los ultimos 30 ciclos guardados.
+- Incluye descarga CSV directa desde la interfaz.
+
+### Configuracion del Worker (GitHub Actions)
+
+El workflow `/.github/workflows/notify_due_cycles.yml` corre cada 5 minutos.
+Configura estos secretos en tu repo de GitHub:
+
+- `TURSO_URL`
+- `TURSO_AUTH_TOKEN`
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
 
 ## 📁 Estructura del Proyecto
 
 ```
 TurbyCargado/
+├── .github/workflows/
+│   └── notify_due_cycles.yml
 ├── src/
 │   ├── app.py              # Aplicación principal de Streamlit
 │   ├── utilidades.py       # Funciones auxiliares
+│   ├── services/
+│   │   ├── notifications.py
+│   │   ├── storage.py
+│   │   └── time_ui.py
+│   ├── workers/
+│   │   └── send_due_notifications.py
 │   └── images/
 │       └── turby_.png      # Imagen de Turby
 ├── data/
 │   └── cargas.csv          # Datos históricos de carga
 ├── notebooks/
 │   └── analisis_ciclos_de_carga.ipynb  # Análisis de datos
+├── tests/
+│   ├── test_notifications.py
+│   ├── test_storage.py
+│   ├── test_time_ui.py
+│   └── test_utilidades.py
 ├── requirements.txt        # Dependencias del proyecto
 ├── LICENSE                # Licencia MIT
 └── README.md              # Este archivo
@@ -122,6 +165,8 @@ Carga(t) = Pendiente × Tiempo + Intercepto
 ### Tecnologías Utilizadas
 
 - **Streamlit**: Framework de aplicaciones web
+- **libsql / Turso**: Persistencia SQLite cloud
+- **Telegram Bot API**: Notificaciones
 - **Pandas**: Manipulación y análisis de datos
 - **NumPy**: Computación numérica
 - **Plotly**: Visualizaciones interactivas
@@ -171,6 +216,14 @@ Las contribuciones son bienvenidas. Si tienes ideas para mejorar la aplicación 
 - [ ] API REST para integraciones externas
 
 ## 📝 Changelog
+
+### v1.1.0 (2026-02-15)
+- Hora visual con slider y botones de acceso rapido
+- Persistencia de ciclos en Turso
+- Historial de ciclos con descarga CSV
+- Notificaciones Telegram (inicio inmediato + fin por worker programado)
+- Workflow de GitHub Actions cada 5 minutos
+- Suite de tests unitarios para calculo, timezone, storage y notificaciones
 
 ### v1.0.0 (2024-08-13)
 - ✨ Lanzamiento inicial de TurbyCargado
